@@ -60,7 +60,7 @@ public class VerifyEmailPubSub implements CloudEventsFunction {
 
             logger.info("In updateMailSentTimestamp method");
 
-            String query = "UPDATE webapp.user set email_verify_sent_time = NOW() where id=?";
+            String query = "UPDATE webapp.user set email_verify_expiry_time = DATE_ADD(NOW(), INTERVAL 2 MINUTE) where username=?";
             PreparedStatement preparedStatement = connection.prepareStatement(query);
             preparedStatement.setString(1, userId);
             int rowsUpdated = preparedStatement.executeUpdate();

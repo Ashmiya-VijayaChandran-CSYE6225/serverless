@@ -24,6 +24,7 @@ public class VerifyEmailPubSub implements CloudEventsFunction {
     private static final String DATABASE_URL = System.getenv("DATABASE_URL");
     private static final String DATABASE_USERNAME = System.getenv("DATABASE_USERNAME");
     private static final String DATABASE_PASSWORD = System.getenv("DATABASE_PASSWORD");
+    private static final String MAILGUN_API_KEY = System.getenv("MAILGUN_API_KEY");
     @Override
     public void accept(CloudEvent event) throws Exception {
         // Get cloud event data as JSON string
@@ -37,32 +38,32 @@ public class VerifyEmailPubSub implements CloudEventsFunction {
         String encodedData = message.getData();
         String decodedData = new String(Base64.getDecoder().decode(encodedData));
         String[] token = decodedData.split(":");
-        String verificationLink = "http://ashmiyavs.me:8080/v1/user/verify-email?username="+token[0] + "&token="+token[1];
+        String verificationLink = "https://ashmiyavs.me/v1/user/verify-email?username="+token[0] + "&token="+token[1];
         String htmlContent = "<html><body>"
                 + "<h1>Welcome, " + token[0] + "!</h1>"
                 + "<p>Thank you for signing up. Please verify your email address by clicking the link below:</p>"
                 + "<p><a href=\"" + verificationLink + "\">Verify Email</a></p>"
                 + "</body></html>";
         HttpResponse<JsonNode> request = Unirest.post("https://api.mailgun.net/v3/" + "ashmiyavs.me" + "/messages")
-			    .basicAuth("api", "828f9dd24f6cd9676dece98c7157e88a-f68a26c9-a65f65fc")
+			    .basicAuth("api", MAILGUN_API_KEY)
                 .queryString("from", "Sender Name <Sender@sender.com>")
                 .queryString("to", token[0])
                 .queryString("subject", "User Verification Email")
                 .queryString("html", htmlContent)
                 .asJson();
-        updateMailSentTimestamp(token[1]);
+        updateMailSentTimestamp(token[0]);
         // Log the message
         logger.info("Pub/Sub message: " + decodedData);
     }
 
-    private void updateMailSentTimestamp(String userId) {
+    private void updateMailSentTimestamp(String username) {
         try (Connection connection = establishConnection().getConnection()) {
 
             logger.info("In updateMailSentTimestamp method");
 
             String query = "UPDATE webapp.user set email_verify_expiry_time = DATE_ADD(NOW(), INTERVAL 2 MINUTE) where username=?";
             PreparedStatement preparedStatement = connection.prepareStatement(query);
-            preparedStatement.setString(1, userId);
+            preparedStatement.setString(1, username);
             int rowsUpdated = preparedStatement.executeUpdate();
             if (rowsUpdated > 0) {
                 logger.info("User MailSentTimestamp updated successfully.");

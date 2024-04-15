@@ -38,7 +38,7 @@ public class VerifyEmailPubSub implements CloudEventsFunction {
         String encodedData = message.getData();
         String decodedData = new String(Base64.getDecoder().decode(encodedData));
         String[] token = decodedData.split(":");
-        String verificationLink = "https://ashmiyavs.me/v1/user/verify-email?username="+token[0] + "&token="+token[1];
+        String verificationLink = "https://ashmiyavs.me/v9/user/verify-email?username="+token[0] + "&token="+token[1];
         String htmlContent = "<html><body>"
                 + "<h1>Welcome, " + token[0] + "!</h1>"
                 + "<p>Thank you for signing up. Please verify your email address by clicking the link below:</p>"
